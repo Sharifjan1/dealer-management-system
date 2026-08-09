@@ -1,3 +1,5 @@
+# Python packages required to run the Dealer Management System backend.
+# Includes FastAPI, database tools, VIN API requests, and server dependencies.
 
 fastapi
 uvicorn[standard]
