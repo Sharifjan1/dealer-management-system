@@ -1,3 +1,12 @@
+"""
+database.py
+
+Sets up the database connection for the Dealer Management System.
+It creates the SQLAlchemy engine and database sessions used throughout
+the application to store and retrieve dealership data.
+"""
+
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
