@@ -6,9 +6,9 @@ Handles vehicle-related API routes for the Dealer Management System.
 This file allows dealers to:
 - Decode VIN numbers
 - Add vehicles to inventory
-- View dealership inventory
-- View individual vehicle financial information
-- Calculate dashboard financial totals
+- View all vehicles
+- View one vehicle with financial details
+- Calculate dashboard summary totals
 - Mark vehicles as sold
 """
 
@@ -43,7 +43,7 @@ router = APIRouter(
 
 
 # ==========================================
-# VEHICLE SALE REQUEST
+# VEHICLE SALE REQUEST MODEL
 # ==========================================
 
 class VehicleSale(BaseModel):
@@ -61,6 +61,9 @@ class VehicleSale(BaseModel):
 def get_vehicles(
     db: Session = Depends(get_db)
 ):
+    """
+    Return all vehicles stored in the database.
+    """
 
     vehicles = (
         db.query(models.Vehicle)
@@ -79,10 +82,18 @@ def get_dashboard_summary(
     db: Session = Depends(get_db)
 ):
     """
-    Calculate dealership dashboard totals.
+    Return dealership-wide financial totals.
 
-    Expenses are included when calculating
-    total investment and potential profit.
+    Active inventory calculations include:
+    - Purchase price
+    - Vehicle expenses
+    - Total invested
+    - Asking value
+    - Potential profit
+
+    Sold vehicle calculations include:
+    - Total sales
+    - Actual profit
     """
 
     vehicles = (
@@ -90,11 +101,13 @@ def get_dashboard_summary(
         .all()
     )
 
+
     active_vehicles = [
         vehicle
         for vehicle in vehicles
         if vehicle.status != "sold"
     ]
+
 
     sold_vehicles = [
         vehicle
@@ -103,9 +116,9 @@ def get_dashboard_summary(
     ]
 
 
-    # --------------------------------------
+    # ======================================
     # ACTIVE INVENTORY TOTALS
-    # --------------------------------------
+    # ======================================
 
     total_invested = 0
 
@@ -123,6 +136,7 @@ def get_dashboard_summary(
             )
         )
 
+
         projected_profit = (
             calculate_projected_profit(
                 vehicle.purchase_price,
@@ -130,6 +144,7 @@ def get_dashboard_summary(
                 vehicle.expenses
             )
         )
+
 
         total_invested += investment
 
@@ -142,9 +157,9 @@ def get_dashboard_summary(
         )
 
 
-    # --------------------------------------
+    # ======================================
     # SOLD VEHICLE TOTALS
-    # --------------------------------------
+    # ======================================
 
     total_sales = 0
 
@@ -157,6 +172,7 @@ def get_dashboard_summary(
             vehicle.sale_price or 0
         )
 
+
         actual_profit = (
             calculate_actual_profit(
                 vehicle.purchase_price,
@@ -164,6 +180,7 @@ def get_dashboard_summary(
                 vehicle.expenses
             )
         )
+
 
         total_actual_profit += (
             actual_profit or 0
@@ -202,6 +219,9 @@ def get_dashboard_summary(
 def get_vehicle_from_vin(
     vin: str
 ):
+    """
+    Decode a VIN using the VIN service.
+    """
 
     try:
 
@@ -224,6 +244,9 @@ def create_vehicle(
     vehicle: schemas.VehicleCreate,
     db: Session = Depends(get_db)
 ):
+    """
+    Add a new vehicle to dealership inventory.
+    """
 
     clean_vin = (
         vehicle.vin
@@ -263,8 +286,10 @@ def create_vehicle(
     )
 
 
-    new_vehicle = models.Vehicle(
-        **vehicle_data
+    new_vehicle = (
+        models.Vehicle(
+            **vehicle_data
+        )
     )
 
 
@@ -272,7 +297,9 @@ def create_vehicle(
         new_vehicle
     )
 
+
     db.commit()
+
 
     db.refresh(
         new_vehicle
@@ -292,6 +319,10 @@ def sell_vehicle(
     sale: VehicleSale,
     db: Session = Depends(get_db)
 ):
+    """
+    Mark a vehicle as sold and save
+    the final sale price.
+    """
 
     vehicle = (
         db.query(models.Vehicle)
@@ -326,12 +357,14 @@ def sell_vehicle(
         sale.sale_price
     )
 
+
     vehicle.status = (
         "sold"
     )
 
 
     db.commit()
+
 
     db.refresh(
         vehicle
@@ -372,7 +405,6 @@ def sell_vehicle(
 
 
     return {
-
         "message":
             "Vehicle marked as sold.",
 
@@ -380,7 +412,6 @@ def sell_vehicle(
             vehicle,
 
         "financials": {
-
             "total_expenses":
                 total_expenses,
 
@@ -408,6 +439,10 @@ def get_vehicle(
     vehicle_id: int,
     db: Session = Depends(get_db)
 ):
+    """
+    Return one vehicle and all of its
+    calculated financial information.
+    """
 
     vehicle = (
         db.query(models.Vehicle)
@@ -470,12 +505,10 @@ def get_vehicle(
 
 
     return {
-
         "vehicle":
             vehicle,
 
         "financials": {
-
             "total_expenses":
                 total_expenses,
 
