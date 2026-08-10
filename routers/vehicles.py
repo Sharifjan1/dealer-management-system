@@ -2,8 +2,14 @@
 vehicles.py
 
 Handles vehicle-related API routes for the Dealer Management System.
-It allows dealers to decode VINs, add vehicles, view inventory,
-see financial information, and mark vehicles as sold.
+
+This file allows dealers to:
+- Decode VIN numbers
+- Add vehicles to inventory
+- View dealership inventory
+- View individual vehicle financial information
+- Calculate dashboard financial totals
+- Mark vehicles as sold
 """
 
 from fastapi import (
@@ -37,7 +43,7 @@ router = APIRouter(
 
 
 # ==========================================
-# SELL VEHICLE REQUEST
+# VEHICLE SALE REQUEST
 # ==========================================
 
 class VehicleSale(BaseModel):
@@ -65,6 +71,130 @@ def get_vehicles(
 
 
 # ==========================================
+# DASHBOARD SUMMARY
+# ==========================================
+
+@router.get("/dashboard/summary")
+def get_dashboard_summary(
+    db: Session = Depends(get_db)
+):
+    """
+    Calculate dealership dashboard totals.
+
+    Expenses are included when calculating
+    total investment and potential profit.
+    """
+
+    vehicles = (
+        db.query(models.Vehicle)
+        .all()
+    )
+
+    active_vehicles = [
+        vehicle
+        for vehicle in vehicles
+        if vehicle.status != "sold"
+    ]
+
+    sold_vehicles = [
+        vehicle
+        for vehicle in vehicles
+        if vehicle.status == "sold"
+    ]
+
+
+    # --------------------------------------
+    # ACTIVE INVENTORY TOTALS
+    # --------------------------------------
+
+    total_invested = 0
+
+    inventory_value = 0
+
+    potential_profit = 0
+
+
+    for vehicle in active_vehicles:
+
+        investment = (
+            calculate_total_investment(
+                vehicle.purchase_price,
+                vehicle.expenses
+            )
+        )
+
+        projected_profit = (
+            calculate_projected_profit(
+                vehicle.purchase_price,
+                vehicle.asking_price,
+                vehicle.expenses
+            )
+        )
+
+        total_invested += investment
+
+        inventory_value += (
+            vehicle.asking_price or 0
+        )
+
+        potential_profit += (
+            projected_profit
+        )
+
+
+    # --------------------------------------
+    # SOLD VEHICLE TOTALS
+    # --------------------------------------
+
+    total_sales = 0
+
+    total_actual_profit = 0
+
+
+    for vehicle in sold_vehicles:
+
+        total_sales += (
+            vehicle.sale_price or 0
+        )
+
+        actual_profit = (
+            calculate_actual_profit(
+                vehicle.purchase_price,
+                vehicle.sale_price,
+                vehicle.expenses
+            )
+        )
+
+        total_actual_profit += (
+            actual_profit or 0
+        )
+
+
+    return {
+        "inventory_count":
+            len(active_vehicles),
+
+        "vehicles_sold":
+            len(sold_vehicles),
+
+        "total_invested":
+            total_invested,
+
+        "inventory_value":
+            inventory_value,
+
+        "potential_profit":
+            potential_profit,
+
+        "total_sales":
+            total_sales,
+
+        "total_actual_profit":
+            total_actual_profit
+    }
+
+
+# ==========================================
 # VIN DECODER
 # ==========================================
 
@@ -74,9 +204,11 @@ def get_vehicle_from_vin(
 ):
 
     try:
+
         return decode_vin(vin)
 
     except ValueError as error:
+
         raise HTTPException(
             status_code=400,
             detail=str(error)
@@ -111,6 +243,7 @@ def create_vehicle(
 
 
     if existing_vehicle:
+
         raise HTTPException(
             status_code=400,
             detail=(
@@ -130,10 +263,8 @@ def create_vehicle(
     )
 
 
-    new_vehicle = (
-        models.Vehicle(
-            **vehicle_data
-        )
+    new_vehicle = models.Vehicle(
+        **vehicle_data
     )
 
 
@@ -173,6 +304,7 @@ def sell_vehicle(
 
 
     if not vehicle:
+
         raise HTTPException(
             status_code=404,
             detail="Vehicle not found."
@@ -180,10 +312,12 @@ def sell_vehicle(
 
 
     if vehicle.status == "sold":
+
         raise HTTPException(
             status_code=400,
             detail=(
-                "This vehicle is already marked as sold."
+                "This vehicle is already "
+                "marked as sold."
             )
         )
 
@@ -228,20 +362,25 @@ def sell_vehicle(
     )
 
 
-    roi = calculate_roi(
-        vehicle.purchase_price,
-        vehicle.sale_price,
-        vehicle.expenses
+    roi = (
+        calculate_roi(
+            vehicle.purchase_price,
+            vehicle.sale_price,
+            vehicle.expenses
+        )
     )
 
 
     return {
+
         "message":
             "Vehicle marked as sold.",
 
-        "vehicle": vehicle,
+        "vehicle":
+            vehicle,
 
         "financials": {
+
             "total_expenses":
                 total_expenses,
 
@@ -281,6 +420,7 @@ def get_vehicle(
 
 
     if not vehicle:
+
         raise HTTPException(
             status_code=404,
             detail="Vehicle not found."
@@ -320,17 +460,22 @@ def get_vehicle(
     )
 
 
-    roi = calculate_roi(
-        vehicle.purchase_price,
-        vehicle.sale_price,
-        vehicle.expenses
+    roi = (
+        calculate_roi(
+            vehicle.purchase_price,
+            vehicle.sale_price,
+            vehicle.expenses
+        )
     )
 
 
     return {
-        "vehicle": vehicle,
+
+        "vehicle":
+            vehicle,
 
         "financials": {
+
             "total_expenses":
                 total_expenses,
 
