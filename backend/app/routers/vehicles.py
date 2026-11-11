@@ -57,7 +57,10 @@ class VehicleSale(BaseModel):
 # GET ALL VEHICLES
 # ==========================================
 
-@router.get("/")
+@router.get(
+    "/",
+    response_model=list[schemas.VehicleResponse]
+)
 def get_vehicles(
     db: Session = Depends(get_db)
 ):
@@ -239,7 +242,10 @@ def get_vehicle_from_vin(
 # ADD VEHICLE
 # ==========================================
 
-@router.post("/")
+@router.post(
+    "/",
+    response_model=schemas.VehicleResponse
+)
 def create_vehicle(
     vehicle: schemas.VehicleCreate,
     db: Session = Depends(get_db)
@@ -409,7 +415,9 @@ def sell_vehicle(
             "Vehicle marked as sold.",
 
         "vehicle":
-            vehicle,
+            schemas.VehicleResponse.model_validate(
+                vehicle
+            ),
 
         "financials": {
             "total_expenses":
@@ -506,7 +514,9 @@ def get_vehicle(
 
     return {
         "vehicle":
-            vehicle,
+            schemas.VehicleResponse.model_validate(
+                vehicle
+            ),
 
         "financials": {
             "total_expenses":

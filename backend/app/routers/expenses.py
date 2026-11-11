@@ -25,7 +25,10 @@ router = APIRouter(
 # ADD EXPENSE TO VEHICLE
 # ==========================================
 
-@router.post("/vehicle/{vehicle_id}")
+@router.post(
+    "/vehicle/{vehicle_id}",
+    response_model=schemas.ExpenseResponse
+)
 def add_expense(
     vehicle_id: int,
     expense: schemas.ExpenseCreate,
@@ -67,7 +70,10 @@ def add_expense(
 # GET VEHICLE EXPENSES
 # ==========================================
 
-@router.get("/vehicle/{vehicle_id}")
+@router.get(
+    "/vehicle/{vehicle_id}",
+    response_model=list[schemas.ExpenseResponse]
+)
 def get_vehicle_expenses(
     vehicle_id: int,
     db: Session = Depends(get_db)
