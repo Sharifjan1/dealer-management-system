@@ -21,13 +21,13 @@ from fastapi import (
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-import models
-import schemas
+from app import models
+from app import schemas
 
-from database import get_db
-from vin_service import decode_vin
+from app.database import get_db
+from app.services.vin_service import decode_vin
 
-from calculations import (
+from app.services.calculations import (
     calculate_total_expenses,
     calculate_total_investment,
     calculate_projected_profit,
