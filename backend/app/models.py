@@ -27,8 +27,7 @@ the total amount invested in a vehicle and later calculate profit and ROI.
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
-from database import Base
-
+from app.database import Base
 
 # VEHICLE MODEL
 
