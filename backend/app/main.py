@@ -9,10 +9,10 @@ and runs the FastAPI application.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import models
+from app import models
 
-from database import engine
-from routers import vehicles, expenses
+from app.database import engine
+from app.routers import vehicles, expenses
 
 
 # Create database tables
