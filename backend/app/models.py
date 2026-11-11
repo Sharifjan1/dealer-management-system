@@ -144,5 +144,4 @@ class Expense(Base):
         back_populates="expenses"
     )
 
-## Chatgpt was used to help me out code this 
 

@@ -7,6 +7,7 @@ and returned from the API.
 """
 
 from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Optional
 
 
@@ -53,6 +54,8 @@ class VehicleResponse(BaseModel):
     make: Optional[str] = None
     model: Optional[str] = None
     trim: Optional[str] = None
+    body_type: Optional[str] = None
+    fuel_type: Optional[str] = None
 
     color: Optional[str] = None
     mileage: Optional[int] = None
@@ -62,6 +65,8 @@ class VehicleResponse(BaseModel):
     sale_price: Optional[float] = None
 
     status: str
+
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
