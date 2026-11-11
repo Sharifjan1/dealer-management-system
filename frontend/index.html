@@ -1,1 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dealer Management System</title>
+  <meta name="description" content="Track used car inventory, reconditioning costs and profit per vehicle.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=Permanent+Marker&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%231d2a36%22/%3E%3Ctext x=%2216%22 y=%2222%22 font-size=%2214%22 text-anchor=%22middle%22 fill=%22%23f6c614%22 font-family=%22Arial%22 font-weight=%22700%22%3E$%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M5 20l3-8a3 3 0 0 1 2.8-2h10.4a3 3 0 0 1 2.8 2l3 8v5a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-1H9v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M8.5 18l2-5.2a1 1 0 0 1 .9-.8h9.2a1 1 0 0 1 .9.8l2 5.2z" fill="currentColor"/>
+      </svg>
+      <div>
+        <p class="brand-name">Dealer Management System</p>
+        <p class="brand-sub">Inventory, costs and profit per car</p>
+      </div>
+    </div>
 
+    <div class="source">
+      <div class="segmented" role="radiogroup" aria-label="Data source">
+        <button type="button" role="radio" data-mode="demo">Demo data</button>
+        <button type="button" role="radio" data-mode="api">My API</button>
+      </div>
+      <form class="api-url" id="api-url-form" hidden>
+        <label for="api-url" class="visually-hidden">API address</label>
+        <input id="api-url" name="apiUrl" type="url" placeholder="http://127.0.0.1:8000" spellcheck="false">
+        <button type="submit" class="btn btn-quiet">Connect</button>
+      </form>
+      <p class="status" id="status" role="status"></p>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="ledger" aria-labelledby="ledger-title">
+      <h2 id="ledger-title">The lot today</h2>
+      <dl class="ledger-list" id="ledger">
+        <div><dt>Cars on the lot</dt><dd data-key="inventory_count">–</dd></div>
+        <div><dt>Money tied up</dt><dd data-key="total_invested">–</dd></div>
+        <div><dt>Sticker total</dt><dd data-key="inventory_value">–</dd></div>
+        <div><dt>Profit if all sell at sticker</dt><dd data-key="potential_profit">–</dd></div>
+        <div class="ledger-break"><dt>Cars sold</dt><dd data-key="vehicles_sold">–</dd></div>
+        <div><dt>Sales</dt><dd data-key="total_sales">–</dd></div>
+        <div><dt>Profit made</dt><dd data-key="total_actual_profit">–</dd></div>
+      </dl>
+      <button type="button" class="btn btn-quiet btn-small" id="reset-demo" hidden>Reset demo data</button>
+    </aside>
+
+    <section class="work">
+
+      <section class="inventory" aria-labelledby="inventory-title">
+        <div class="inventory-head">
+          <h2 id="inventory-title" class="visually-hidden">Inventory</h2>
+          <div class="tabs" role="tablist" aria-label="Inventory view">
+            <button type="button" role="tab" id="tab-lot" data-view="lot" aria-selected="true">On the lot <span class="count" id="count-lot">0</span></button>
+            <button type="button" role="tab" id="tab-sold" data-view="sold" aria-selected="false">Sold <span class="count" id="count-sold">0</span></button>
+          </div>
+          <button type="button" class="btn btn-primary" id="intake-open" aria-controls="intake" aria-expanded="false">Add a car</button>
+        </div>
+        <section class="intake" id="intake" aria-labelledby="intake-title" hidden>
+          <div class="intake-head">
+            <h2 id="intake-title">Add a car</h2>
+            <button type="button" class="btn btn-quiet btn-small" id="intake-close">Cancel</button>
+          </div>
+          <form id="add-form" novalidate>
+            <div class="vin-row">
+              <div class="field field-vin">
+                <label for="vin">VIN</label>
+                <input id="vin" name="vin" maxlength="17" autocomplete="off" spellcheck="false" placeholder="17 characters, from the dash or door jamb" required>
+              </div>
+              <button type="button" class="btn btn-dark" id="decode-btn">Decode VIN</button>
+            </div>
+            <p class="form-note" id="vin-note"></p>
+
+            <div class="grid-fields">
+              <div class="field"><label for="year">Year</label><input id="year" name="year" inputmode="numeric" maxlength="4"></div>
+              <div class="field"><label for="make">Make</label><input id="make" name="make"></div>
+              <div class="field"><label for="model">Model</label><input id="model" name="model"></div>
+              <div class="field"><label for="trim">Trim</label><input id="trim" name="trim"></div>
+              <div class="field"><label for="color">Color</label><input id="color" name="color"></div>
+              <div class="field"><label for="mileage">Miles</label><input id="mileage" name="mileage" type="number" min="0" step="1"></div>
+              <div class="field"><label for="purchase_price">Paid</label><input id="purchase_price" name="purchase_price" type="number" min="0" step="0.01" placeholder="0"></div>
+              <div class="field"><label for="asking_price">Asking</label><input id="asking_price" name="asking_price" type="number" min="0" step="0.01" placeholder="0"></div>
+            </div>
+            <input type="hidden" name="body_type" id="body_type">
+            <input type="hidden" name="fuel_type" id="fuel_type">
+            <div class="form-actions">
+              <p class="form-note" id="add-note"></p>
+              <button type="submit" class="btn btn-primary">Add to inventory</button>
+            </div>
+          </form>
+        </section>
+        <div class="cars" id="cars" role="tabpanel" aria-labelledby="tab-lot"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
+    <div class="sheet-inner">
+      <header class="sheet-head">
+        <div>
+          <h2 id="sheet-title"></h2>
+          <p class="sheet-vin" id="sheet-vin"></p>
+        </div>
+        <button type="button" class="icon-btn" id="sheet-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+
+      <div class="sheet-body">
+        <dl class="specs" id="sheet-specs"></dl>
+
+        <section aria-labelledby="money-title">
+          <h3 id="money-title">Money</h3>
+          <table class="money" id="sheet-money"></table>
+        </section>
+
+        <section aria-labelledby="costs-title">
+          <h3 id="costs-title">Costs on this car</h3>
+          <ul class="costs" id="sheet-costs"></ul>
+          <form class="inline-form" id="expense-form" novalidate>
+            <div class="field">
+              <label for="exp-category">Type</label>
+              <select id="exp-category" name="category">
+                <option>Repair</option>
+                <option>Detail</option>
+                <option>Tires</option>
+                <option>Transport</option>
+                <option>Auction fee</option>
+                <option>Smog</option>
+                <option>Registration</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field field-grow">
+              <label for="exp-description">Note</label>
+              <input id="exp-description" name="description" placeholder="Optional">
+            </div>
+            <div class="field field-amount">
+              <label for="exp-amount">Amount</label>
+              <input id="exp-amount" name="amount" type="number" min="0.01" step="0.01" required>
+            </div>
+            <button type="submit" class="btn btn-dark">Add cost</button>
+          </form>
+          <p class="form-note" id="expense-note"></p>
+        </section>
+
+        <section aria-labelledby="sell-title" id="sell-section">
+          <h3 id="sell-title">Sell this car</h3>
+          <form class="inline-form" id="sell-form" novalidate>
+            <div class="field field-amount">
+              <label for="sale-price">Sale price</label>
+              <input id="sale-price" name="sale_price" type="number" min="0.01" step="0.01" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Mark as sold</button>
+          </form>
+          <p class="form-note" id="sell-note"></p>
+        </section>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" popover="manual" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
